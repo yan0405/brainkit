@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  ipfs_node:
+    image: ipfs/go-ipfs:latest
+    container_name: ipfs_node
+    ports:
+      - "4001:4001" # P2P 端口 (可以取消映射，因为不用)
+      - "5001:5001" # API 接口
+      - "8080:8080" # 网关接口
+    volumes:
+      - ./ipfs_staging:/export
+      - ./ipfs_data:/data/ipfs
+    environment:
+      - IPFS_PROFILE=local-discovery
+    restart: unless-stopped
+    command: ["daemon", "--offline", "--enable-gc"]

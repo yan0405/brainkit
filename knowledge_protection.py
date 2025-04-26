@@ -11,23 +11,29 @@ KEYSTORE_DIR = "./keystore"
 os.makedirs(KEYSTORE_DIR, exist_ok=True)
 
 # --- AES Utility ---
+
+
 def generate_aes_key() -> bytes:
     return os.urandom(32)  # AES-256
+
 
 def save_file(data: bytes, name: str):
     path = os.path.join(KEYSTORE_DIR, name)
     with open(path, 'wb') as f:
         f.write(data)
 
+
 def load_file(name: str) -> bytes:
     path = os.path.join(KEYSTORE_DIR, name)
     with open(path, 'rb') as f:
         return f.read()
 
+
 def aes_encrypt(data: bytes, key: bytes) -> bytes:
     iv = os.urandom(16)
     cipher = AES.new(key, AES.MODE_CBC, iv)
     return iv + cipher.encrypt(pad(data, AES.block_size))
+
 
 def aes_decrypt(ciphertext: bytes, key: bytes) -> bytes:
     iv = ciphertext[:16]
@@ -35,6 +41,8 @@ def aes_decrypt(ciphertext: bytes, key: bytes) -> bytes:
     return unpad(cipher.decrypt(ciphertext[16:]), AES.block_size)
 
 # --- Umbral PRE Flow ---
+
+
 def generate_umbral_keys(identity: str):
     priv_key = SecretKey.random()
     pub_key = priv_key.public_key()
@@ -47,45 +55,54 @@ def generate_umbral_keys(identity: str):
     return priv_key, pub_key, signer, verifying_key
 
 # --- Encrypt & PRE Protect File ---
+
+
 def encrypt_and_capsule(file_path: str, alice_pub_key):
     with open(file_path, 'rb') as f:
         plaintext = f.read()
     aes_key = generate_aes_key()
     enc_data = aes_encrypt(plaintext, aes_key)
     capsule, encrypted_aes_key = encrypt(alice_pub_key, aes_key)
+    save_file(enc_data, "encrypted_faiss.bin")
     save_file(encrypted_aes_key, "encrypted_aes.key")
     save_file(bytes(capsule), "capsule.bin")
     return enc_data, capsule, encrypted_aes_key
 
 # --- Decrypt Using PRE ---
+
+
 def decrypt_with_reencryption(enc_data, capsule, encrypted_aes_key, kfrags, alice_pub_key, alice_verifying_pk, bob_pub_key, bob_sk):
     selected_kfrags = random.sample(kfrags, 1)
     cfrags = [reencrypt(capsule, kfrag) for kfrag in selected_kfrags]
     verified_cfrags = [CapsuleFrag.from_bytes(bytes(cfrag)).verify(
-        capsule, 
+        capsule,
         verifying_pk=alice_verifying_pk,  # Alice的签名公钥
         delegating_pk=alice_pub_key,      # Alice的加密公钥
         receiving_pk=bob_pub_key          # Bob的加密公钥
     ) for cfrag in cfrags]
     aes_key = decrypt_reencrypted(
-        receiving_sk=bob_sk, 
-        delegating_pk=alice_pub_key, 
+        receiving_sk=bob_sk,
+        delegating_pk=alice_pub_key,
         capsule=capsule,
-        verified_cfrags=verified_cfrags, 
+        verified_cfrags=verified_cfrags,
         ciphertext=encrypted_aes_key
     )
     return aes_decrypt(enc_data, aes_key)
 
+
 # --- Example Usage ---
 if __name__ == "__main__":
-    alice_sk, alice_pk, alice_signer, alice_verifying_pk = generate_umbral_keys("alice")
+    alice_sk, alice_pk, alice_signer, alice_verifying_pk = generate_umbral_keys(
+        "alice")
     bob_sk, bob_pk, _, _ = generate_umbral_keys("bob")
 
     # Encrypt and store capsule and encrypted key
-    enc_data, capsule, encrypted_aes_key = encrypt_and_capsule("./brain_store/knowledge_index.faiss", alice_pk)
+    enc_data, capsule, encrypted_aes_key = encrypt_and_capsule(
+        "./brain_store/knowledge_index.faiss", alice_pk)
 
     # Generate kfrags for Bob
-    kfrags = generate_kfrags(delegating_sk=alice_sk, receiving_pk=bob_pk, signer=alice_signer, threshold=1, shares=1)
+    kfrags = generate_kfrags(delegating_sk=alice_sk, receiving_pk=bob_pk,
+                             signer=alice_signer, threshold=1, shares=1)
 
     # Decrypt using re-encryption
     decrypted = decrypt_with_reencryption(
