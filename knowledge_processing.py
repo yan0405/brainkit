@@ -105,18 +105,7 @@ index = build_faiss_index(embeddings)
 # 保存索引（可选）
 faiss.write_index(index, "./brain_store/knowledge_index.faiss")
 
-# # 🔍 用户提问
-# query = "secondMe"
-# # 检索
-# indices, distances = search_top_k(index, query, model.encode, top_k=3)
-# # 打印匹配结果
-# print("📌 匹配结果：")
-# for i, idx in enumerate(indices):
-#     print(f"{i+1}. 匹配片段：{chunks[idx]}")
-#     print(f"   相似度分数（越小越相似）：{distances[i]:.4f}\n")
-
-
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="")
 # print(f"嵌入维度：{embeddings}")
 # # 输出前几个看看
 # for i, chunk in enumerate(chunks[:5]):
