@@ -49,23 +49,6 @@
 
 ---
 
-## 🧱 Requirements
-- Python ≥ 3.9
-- (Optional) Docker & Docker Compose for a local offline IPFS node
-- Recommended: `python -m venv .venv && source .venv/bin/activate` (Windows: `.venv\Scripts\activate`)
-
-**Python deps (example):**
-```
-pyUmbral==0.3.3
-pycryptodome
-ipfshttpclient
-# faiss-cpu or faiss-gpu (optional, based on your stack)
-```
-
-> Pin pyUmbral to `0.3.3` to use `SecretKey / Signer / generate_kfrags` etc.
-
----
-
 ## 🚀 Quickstart (End‑to‑End)
 
 ### 1) Prepare a RAG index
